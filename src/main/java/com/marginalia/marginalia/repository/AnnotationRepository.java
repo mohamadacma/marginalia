@@ -40,6 +40,12 @@ public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
             @Param("currentPage") Integer currentPage
     );
 
+    // Get recent annotations from friends (feed feature)
+    @Query("SELECT a FROM Annotation a " +
+            "WHERE a.user.id IN :friendIds " +
+            "ORDER BY a.createdAt DESC")
+    List<Annotation> findRecentFriendsAnnotations(@Param("friendIds") List<Long> friendIds);
+
     // Get recent annotations from a user
     List<Annotation> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

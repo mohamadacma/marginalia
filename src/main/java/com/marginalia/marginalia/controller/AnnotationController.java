@@ -11,6 +11,7 @@ import com.marginalia.marginalia.repository.UserBookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.marginalia.marginalia.repository.FriendshipRepository;
 
 import java.util.List;
 
@@ -29,6 +30,8 @@ public class AnnotationController {
 
     @Autowired
     private UserBookRepository userBookRepository;
+    @Autowired
+    private FriendshipRepository friendshipRepository;
 
     // Create a new annotation
     @PostMapping
@@ -77,6 +80,46 @@ public class AnnotationController {
     }
 
     // Get all annotations for a book (admin view - no spoiler protection)
+    // Get annotations from friends for a specific book (with spoiler protection!)
+    @GetMapping("/friends/book/{bookId}")
+    public ResponseEntity<List<Annotation>> getFriendsBookAnnotations(
+            @PathVariable Long bookId,
+            @RequestParam Long userId) {
+
+        // Get user's friends
+        List<Long> friendIds = friendshipRepository.findFriendIdsByUserId(userId);
+
+        if (friendIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());  // No friends, return empty list
+        }
+
+        // Get user's progress on this book
+        UserBook userBook = userBookRepository
+                .findByUserIdAndBookId(userId, bookId)
+                .orElseThrow(() -> new RuntimeException("User is not reading this book"));
+
+        // Get friends' annotations (spoiler-protected!)
+        List<Annotation> friendsAnnotations = annotationRepository
+                .findFriendsAnnotations(friendIds, bookId, userBook.getCurrentPage());
+
+        return ResponseEntity.ok(friendsAnnotations);
+    }
+
+    // Get recent annotations from friends (feed/timeline)
+    @GetMapping("/friends/feed")
+    public ResponseEntity<List<Annotation>> getFriendsFeed(@RequestParam Long userId) {
+        // Get user's friends
+        List<Long> friendIds = friendshipRepository.findFriendIdsByUserId(userId);
+
+        if (friendIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        // Get recent annotations from friends
+        List<Annotation> feed = annotationRepository.findRecentFriendsAnnotations(friendIds);
+
+        return ResponseEntity.ok(feed);
+    }
     @GetMapping("/book/{bookId}")
     public List<Annotation> getAllBookAnnotations(@PathVariable Long bookId) {
         return annotationRepository.findByBookIdOrderByPageNumberAsc(bookId);
