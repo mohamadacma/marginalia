@@ -27,6 +27,29 @@ public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
             @Param("bookId") Long bookId,
             @Param("currentPage") Integer currentPage
     );
+    // Get most liked annotations across all books
+    @Query("SELECT a FROM Annotation a " +
+            "LEFT JOIN Like l ON l.annotation.id = a.id " +
+            "GROUP BY a.id " +
+            "ORDER BY COUNT(l) DESC")
+    List<Annotation> findMostLiked();
+
+    // Get most liked annotations for a specific book
+    @Query("SELECT a FROM Annotation a " +
+            "LEFT JOIN Like l ON l.annotation.id = a.id " +
+            "WHERE a.book.id = :bookId " +
+            "GROUP BY a.id " +
+            "ORDER BY COUNT(l) DESC")
+    List<Annotation> findMostLikedByBook(@Param("bookId") Long bookId);
+
+    // Get annotations with like count (custom projection)
+    @Query("SELECT a.id as annotationId, a.text as text, " +
+            "a.pageNumber as pageNumber, COUNT(l) as likeCount " +
+            "FROM Annotation a " +
+            "LEFT JOIN Like l ON l.annotation.id = a.id " +
+            "GROUP BY a.id, a.text, a.pageNumber " +
+            "ORDER BY COUNT(l) DESC")
+    List<Object[]> findAnnotationsWithLikeCount();
 
     // Get annotations from friends (for feed feature later)
     @Query("SELECT a FROM Annotation a " +
