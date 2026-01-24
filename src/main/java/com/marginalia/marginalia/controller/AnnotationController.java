@@ -1,5 +1,6 @@
 package com.marginalia.marginalia.controller;
 
+import com.marginalia.marginalia.dto.AnnotationWithLikesDTO;
 import com.marginalia.marginalia.model.Annotation;
 import com.marginalia.marginalia.model.Book;
 import com.marginalia.marginalia.model.User;
@@ -12,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.marginalia.marginalia.repository.FriendshipRepository;
+import com.marginalia.marginalia.service.AnnotationService;
+
 
 import java.util.List;
 
@@ -156,6 +159,23 @@ public class AnnotationController {
     @GetMapping("/user/{userId}/recent")
     public List<Annotation> getUserRecentAnnotations(@PathVariable Long userId) {
         return annotationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+    @Autowired
+    private AnnotationService annotationService;
+
+    // Get most liked annotations (global leaderboard)
+    @GetMapping("/most-liked")
+    public ResponseEntity<List<AnnotationWithLikesDTO>> getMostLiked(
+            @RequestParam(required = false, defaultValue = "10") Integer limit) {
+        return ResponseEntity.ok(annotationService.getMostLikedAnnotations(limit));
+    }
+
+    // Get most liked annotations for a specific book
+    @GetMapping("/book/{bookId}/most-liked")
+    public ResponseEntity<List<AnnotationWithLikesDTO>> getMostLikedByBook(
+            @PathVariable Long bookId,
+            @RequestParam(required = false, defaultValue = "10") Integer limit) {
+        return ResponseEntity.ok(annotationService.getMostLikedByBook(bookId, limit));
     }
 
     // Delete annotation
